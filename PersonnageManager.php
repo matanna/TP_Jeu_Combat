@@ -31,7 +31,8 @@ class PersonnageManager
     //modifier un personnage
     public function updatePerso(Personnage $perso)
     {
-        $this->_db->exec('UPDATE personnages SET degats =' . $perso->degats());
+        $req = $this->_db->prepare('UPDATE personnages SET degats = ? WHERE id = ?');
+        $req -> execute(array($perso->degats(), $perso->id()));
     }
 
     //supprimer un personnage
@@ -41,13 +42,25 @@ class PersonnageManager
     }
 
     //selectionner un personnage
-    public function selectPerso($nomPerso)
+    public function selectPerso($info)
     {
+        if(is_string($info))
+        {
         $req = $this->_db->prepare('SELECT id, nom, degats FROM personnages WHERE nom = :nom');
-        $req -> bindValue(':nom', $nomPerso, PDO::PARAM_STR);
+        $req -> bindValue(':nom', $info, PDO::PARAM_STR);
         $req -> execute();
         $data = $req->fetch(PDO::FETCH_ASSOC);
         return $data;
+        }
+        elseif(is_int($info))
+        {
+        $req = $this->_db->prepare('SELECT id, nom, degats FROM personnages WHERE id = :id');
+        $req -> bindValue(':id', $info, PDO::PARAM_INT);
+        $req -> execute();
+        $data = $req->fetch(PDO::FETCH_ASSOC);
+        return $data;
+        }
+        
     }
 
     //compter le nombre de personnage
@@ -60,10 +73,10 @@ class PersonnageManager
     public function getListPerso($id)
     {
         $persos = [];
-        $req = $this->_db->query('SELECT id, nom, degats FROM personnage WHERE id != ' . $id);
+        $req = $this->_db->query('SELECT id, nom, degats FROM personnages WHERE id != ' . $id);
         while($data = $req->fetch(PDO::FETCH_ASSOC))
         {
-            $persos = new Personnage($data);
+            $persos[] = new Personnage($data);
         }
         return $persos;
     }
