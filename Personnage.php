@@ -1,11 +1,14 @@
 <?php
 
-class Personnage
+abstract class Personnage
 {
     //attributes
     private $_id;
     private $_nom;
     private $_degats;
+    protected $_type;
+    protected $_atout;
+    protected $_reveil;
 
     //constantes
     const CEST_MOI = 1;
@@ -16,6 +19,7 @@ class Personnage
     public function __construct(array $init)
     {
         $this -> hydrate($init);
+        $this->_type = strtolower(static::class);
     }
 
     //hydrate
@@ -29,6 +33,7 @@ class Personnage
                 $this -> $method($value);
             }
         }
+
     }
 
     //getters
@@ -45,6 +50,21 @@ class Personnage
     public function degats()
     {
         return $this->_degats;
+    }
+
+    public function type()
+    {
+        return $this->_type;
+    }
+
+    public function atout()
+    {
+        return $this->_atout;
+    }
+
+    public function reveil()
+    {
+        return $this->_reveil;
     }
 
     //setters
@@ -68,31 +88,52 @@ class Personnage
     public function setDegats($degats)
     {
         $degats = (int)$degats;
-        if ($degats>=0 && $degats<=100)
+        if ($degats>=0)
         {
             $this->_degats = $degats;
         }
     }
-    //fonctions        
-    public function frapper(Personnage $persoAFrapper)
+
+    public function setAtout($atout)
     {
-        if ($persoAFrapper->id() == $this->_id)
+        $atout = (int)$atout;
+        if($this->_degats >= 0 && $this->_degats < 25 )
         {
-            return self::CEST_MOI;
+            $this->_atout = 4;
+        }
+        elseif($this->_degats >= 25 && $this->_degats < 50 )
+        {
+            $this->_atout = 3;
+        }
+        if($this->_degats >= 50 && $this->_degats < 75 )
+        {
+            $this->_atout = 2;
+        }
+        elseif($this->_degats >= 75 && $this->_degats < 90 )
+        {
+            $this->_atout = 1;
+        }
+        elseif($this->_degats >= 90 &&  $this->_degats <=100)
+        {
+            $this->_atout = 0;
+        }
+    }
+
+    public function setReveil($reveil)
+    {
+        $reveil = (int)$reveil;
+        if($reveil < time())
+        {
+            $this->_reveil = 0;
         }
         else
         {
-            $persoAFrapper -> recevoirDegats();
-            if ($persoAFrapper->degats() >= 100)
-            {
-                return self::PERSONNAGE_TUE;
-            } 
-            else
-            {
-                return self::PERSONNAGE_FRAPPE;
-            }
+            $this->_reveil = $reveil;
         }
     }
+
+    //fonctions        
+    abstract public function frapper(Personnage $persoAFrapper);
 
     public function recevoirDegats()
     {
@@ -110,4 +151,5 @@ class Personnage
             return true;
         }
     }
+
 }

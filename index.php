@@ -19,7 +19,10 @@
     //destruction de la session pour changer de personnage
     if(isset($_GET['page']) && $_GET['page'] == 'deconnexion')
     {
+        unset($perso);
         session_destroy();
+        header('Location: index.php');
+        
     }
 
     //connexion BDD
@@ -32,9 +35,9 @@
     //Si on clique sur Créer Personnage
     if(isset($_POST['createPerso']) && !empty($_POST['nom']))
     {
-        //Création du personnage (objet)
-        $perso = new Personnage(array('nom' => htmlspecialchars($_POST['nom'])));
-
+        //Création du personnage en determinant la class fille choisi (objet)
+        $typePerso = ucfirst($_POST['type']);
+        $perso = new $typePerso(array('nom' => htmlspecialchars($_POST['nom']), 'type' => $_POST['type']));
         //Si nom entré non valide (vide)
         $verifNom = $perso -> nomValide($_POST['nom']);
         if (!$verifNom)
@@ -51,7 +54,6 @@
         //Créer Personnage
         else
         {
-
             echo $manager -> addNewPerso($perso);
             echo 'Personnage créé';
         }
@@ -63,7 +65,8 @@
         if($manager->persoExists(htmlspecialchars($_POST['nom'])) > 0)
         {
             $data = $manager -> selectPerso($_POST['nom']);
-            $perso = new Personnage($data);
+            $typePerso = ucfirst($data['type']);
+            $perso = new $typePerso($data);
         }
         //s'il n'existe pas
         else
@@ -76,14 +79,15 @@
     {
         //On récupère les elements du perso  frapper dans la BDD et on crée le perso a frapper
         $data = $manager->selectPerso((int)$_GET['id']);
-        $persoAFrapper = new Personnage($data);
+        $typePerso = ucfirst($data['type']);
+        $persoAFrapper = new $typePerso($data);
         //si le perso qui frappe existe
         if(isset($perso))
         {
             //On frappe en recuperant la valeur de retour de la fonction (constantes de la classe personnage)
             $result = $perso -> frapper($persoAFrapper);
             //on modifie la BDD avec les nouvelles valeurs (dégats)
-            $manager -> updatePerso($persoAFrapper);  
+            $manager -> updatePerso($persoAFrapper);      
         }
         //On affiche un message en fonction de la valeur de retour de frapper()
         if(isset($result))
@@ -101,6 +105,11 @@
                 
                 case 3 :
                     $message = 'le perso vient de prendre 5 points de dégats';
+                break;
+
+                case 5 : 
+                    $message = 'Ce personnage est endormi, vous ne pouvez pas le frapper !!!';
+                break;
             }
             if(isset($message))
             {
@@ -120,9 +129,10 @@
     //S'affiche uniquement si le perso est crée (objet Personnage)
     if(isset($perso))
     {
-?>
+?>  
     <!--Affichage du perso choisi ou juste crée-->
-    <p>Votre personnage : <?= $perso->nom() ?> - Dégats :  <?= $perso->degats() ?> </p>
+    <p>Votre personnage : <?= $perso->nom() ?> - <?= ucfirst($perso->type()) ?> ( Dégats :  <?= $perso->degats() ?> ) 
+    (Atout : <?= $perso->atout() ?>) (Reveil : ) </p>
     <p>Quel personnage voulez vous frapper ? :</p>
     <p>
         <?php 
@@ -131,7 +141,16 @@
 
         foreach($persos as $value) 
         {
-            echo '<p><a href="?id=' . $value->id() .'">' .  $value->nom() . '</a> - Dégats : '. $value->degats() . '</p>'; 
+            if($value->reveil() < time())
+            {
+                $reveil = 'Prêt à combattre';
+            }
+            else
+            {
+               $reveil = date('d/m/Y H:i:s',$value->reveil()); 
+            }
+            echo '<p><a href="?id=' . $value->id() .'">' .  $value->nom() . '</a> - ' . ucfirst($value->type()) .' ( Dégats : '. $value->degats() . ' ) 
+            (Atout : ' . $value->atout() .') ( Réveil : '. $reveil . ')</p>'; 
         }
         ?>
     </p>
@@ -147,7 +166,14 @@
     <h1>Mini jeu de combat</h1>
     <form method='post' action="">
         <p>Nom : <input type='text' name='nom' /></p>
-        <p><input type='submit' name='createPerso' value='Nouveau Personnage' /></p>
+        <p>
+            <input type='submit' name='createPerso' value='Nouveau Personnage' />
+            Type du personnage : 
+            <select name='type'>
+                <option value='magicien'>Magicien</option>
+                <option value='guerrier'>Guerrier</option>
+            </select>
+        </p>
         <p><input type='submit' name='usePerso' value='Utiliser Personnage' /></p>
     </form>
 <?php
